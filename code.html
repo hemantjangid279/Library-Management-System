@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Library Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f3f4f6; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .status-available { color: #059669; font-weight: bold; }
+        .status-issued { color: #dc2626; font-weight: bold; }
+        /* Custom scrollbar for logs */
+        .log-container { max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-5xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+        <!-- Header -->
+        <header class="bg-blue-600 p-6 text-white text-center">
+            <h1 class="text-3xl font-bold">Library Management System</h1>
+            <p class="text-blue-100 mt-2 text-sm uppercase tracking-wide">Digital Catalog & Transaction Manager</p>
+        </header>
+
+        <!-- Navigation Tabs (History removed from here) -->
+        <nav class="flex border-b bg-gray-50">
+            <button onclick="showTab('inventory')" class="flex-1 py-4 px-6 text-center font-medium hover:bg-gray-100 focus:outline-none transition border-b-2 border-transparent active-tab" id="tab-inventory">Inventory</button>
+            <button onclick="showTab('add')" class="flex-1 py-4 px-6 text-center font-medium hover:bg-gray-100 focus:outline-none transition border-b-2 border-transparent" id="tab-add">Add Book</button>
+            <button onclick="showTab('transactions')" class="flex-1 py-4 px-6 text-center font-medium hover:bg-gray-100 focus:outline-none transition border-b-2 border-transparent" id="tab-transactions">Issue/Return</button>
+        </nav>
+
+        <div class="p-6">
+            <!-- Alert Box -->
+            <div id="message-box" class="hidden mb-4 p-4 rounded-lg text-sm font-medium"></div>
+
+            <!-- UPPER SECTION: Tab Contents -->
+            <div class="min-h-[300px]">
+                <!-- TAB: Inventory & Search -->
+                <section id="inventory" class="tab-content active">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <h2 class="text-xl font-bold text-gray-800">Available Books</h2>
+                        <div class="relative w-full md:w-64">
+                            <input type="text" id="searchInput" onkeyup="searchBooks()" placeholder="Search Name/Author..." 
+                                   class="w-full pl-4 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-600 uppercase text-xs">
+                                    <th class="p-3 border">ID</th>
+                                    <th class="p-3 border">Book Name</th>
+                                    <th class="p-3 border">Author</th>
+                                    <th class="p-3 border">Category</th>
+                                    <th class="p-3 border">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bookTableBody">
+                                <!-- Books injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- TAB: Add New Book -->
+                <section id="add" class="tab-content">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6">Register New Book</h2>
+                    <form id="addBookForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Book ID</label>
+                            <input type="text" id="bookId" required class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Book Name</label>
+                            <input type="text" id="bookName" required class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Author</label>
+                            <input type="text" id="bookAuthor" required class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                            <select id="bookCategory" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option>Science</option>
+                                <option>Literature</option>
+                                <option>Mathematics</option>
+                                <option>History</option>
+                                <option>Fiction</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition">Save Book to Catalog</button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- TAB: Issue & Return -->
+                <section id="transactions" class="tab-content">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                        <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                            <h2 class="text-lg font-bold text-blue-800 mb-4">Issue a Book</h2>
+                            <div class="space-y-4">
+                                <input type="text" id="issueBookId" placeholder="Enter Book ID" class="w-full p-2 border rounded">
+                                <input type="text" id="studentName" placeholder="Enter Student Name" class="w-full p-2 border rounded">
+                                <button onclick="handleIssue()" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700">Confirm Issue</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-orange-50 p-6 rounded-xl border border-orange-100">
+                            <h2 class="text-lg font-bold text-orange-800 mb-4">Return a Book</h2>
+                            <div class="space-y-4">
+                                <input type="text" id="returnBookId" placeholder="Enter Book ID" class="w-full p-2 border rounded">
+                                <button onclick="handleReturn()" class="w-full bg-orange-600 text-white py-2 rounded font-bold hover:bg-orange-700">Confirm Return</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- LOWER SECTION: Permanent History Log -->
+            <hr class="my-10 border-gray-200">
+            
+            <section id="history" class="mt-4">
+                <div class="flex items-center gap-2 mb-6">
+                    <div class="h-8 w-2 bg-blue-600 rounded-full"></div>
+                    <h2 class="text-xl font-bold text-gray-800">Detailed Transaction Logs (Kab kisne li/di)</h2>
+                </div>
+                
+                <div class="overflow-x-auto log-container border rounded-lg">
+                    <table class="w-full text-left border-collapse bg-white">
+                        <thead class="sticky top-0 shadow-sm">
+                            <tr class="bg-gray-800 text-white uppercase text-xs">
+                                <th class="p-3 border">Book ID</th>
+                                <th class="p-3 border">Book Name</th>
+                                <th class="p-3 border">Author</th>
+                                <th class="p-3 border">Student Name</th>
+                                <th class="p-3 border">Date</th>
+                                <th class="p-3 border">Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <!-- History logs injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        // Data State
+        let books = [
+            { id: "101", name: "Modern Physics", author: "H.C. Verma", category: "Science", status: "Available" },
+            { id: "102", name: "The Great Gatsby", author: "F. Scott Fitzgerald", category: "Fiction", status: "Available" },
+            { id: "103", name: "Calculus", author: "Newton", category: "Mathematics", status: "Issued" }
+        ];
+
+        let historyLogs = [
+            { id: "103", name: "Calculus", author: "Newton", student: "Rahul Sharma", date: "2025-12-20", type: "Issue" }
+        ];
+
+        // UI Functions
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(el => {
+                el.classList.remove('border-blue-600', 'text-blue-600');
+            });
+            
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('border-blue-600', 'text-blue-600');
+        }
+
+        function showMessage(text, type = 'success') {
+            const box = document.getElementById('message-box');
+            box.innerText = text;
+            box.className = `mb-4 p-4 rounded-lg text-sm font-medium ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+            box.classList.remove('hidden');
+            setTimeout(() => box.classList.add('hidden'), 3000);
+        }
+
+        // Logic Functions
+        function renderTable(data = books) {
+            const tbody = document.getElementById('bookTableBody');
+            tbody.innerHTML = '';
+            data.forEach(book => {
+                const row = `
+                    <tr class="border-b hover:bg-gray-50 transition">
+                        <td class="p-3 text-sm font-mono text-gray-500">${book.id}</td>
+                        <td class="p-3 font-medium">${book.name}</td>
+                        <td class="p-3 text-sm text-gray-600">${book.author}</td>
+                        <td class="p-3 text-sm italic text-gray-500">${book.category}</td>
+                        <td class="p-3 text-sm">
+                            <span class="${book.status === 'Available' ? 'status-available' : 'status-issued'}">
+                                ${book.status}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+            renderHistoryTable();
+        }
+
+        function renderHistoryTable() {
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+            // slice().reverse() ensures latest logs appear on top
+            historyLogs.slice().reverse().forEach(log => {
+                const row = `
+                    <tr class="border-b hover:bg-gray-50 text-sm">
+                        <td class="p-3">${log.id}</td>
+                        <td class="p-3 font-medium">${log.name}</td>
+                        <td class="p-3">${log.author}</td>
+                        <td class="p-3 text-blue-600 font-medium">${log.student || 'N/A'}</td>
+                        <td class="p-3 text-gray-500 font-mono">${log.date}</td>
+                        <td class="p-3">
+                            <span class="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${log.type === 'Issue' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'}">
+                                ${log.type}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function searchBooks() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = books.filter(b => 
+                b.name.toLowerCase().includes(query) || 
+                b.author.toLowerCase().includes(query)
+            );
+            renderTable(filtered);
+        }
+
+        document.getElementById('addBookForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const newBook = {
+                id: document.getElementById('bookId').value,
+                name: document.getElementById('bookName').value,
+                author: document.getElementById('bookAuthor').value,
+                category: document.getElementById('bookCategory').value,
+                status: "Available"
+            };
+
+            if (books.find(b => b.id === newBook.id)) {
+                showMessage("A book with this ID already exists!", "error");
+                return;
+            }
+
+            books.push(newBook);
+            renderTable();
+            showMessage("Book added successfully!");
+            this.reset();
+            showTab('inventory');
+        });
+
+        function handleIssue() {
+            const bid = document.getElementById('issueBookId').value;
+            const student = document.getElementById('studentName').value;
+            
+            const book = books.find(b => b.id === bid);
+            if (!book) {
+                showMessage("Book ID not found.", "error");
+            } else if (book.status === "Issued") {
+                showMessage("This book is already issued.", "error");
+            } else if (!student) {
+                showMessage("Please enter student name.", "error");
+            } else {
+                book.status = "Issued";
+                historyLogs.push({
+                    id: book.id,
+                    name: book.name,
+                    author: book.author,
+                    student: student,
+                    date: new Date().toLocaleString(),
+                    type: "Issue"
+                });
+                renderTable();
+                showMessage(`Book Issued to ${student}`);
+                document.getElementById('issueBookId').value = "";
+                document.getElementById('studentName').value = "";
+            }
+        }
+
+        function handleReturn() {
+            const bid = document.getElementById('returnBookId').value;
+            const book = books.find(b => b.id === bid);
+            
+            if (!book) {
+                showMessage("Book ID not found.", "error");
+            } else if (book.status === "Available") {
+                showMessage("This book is already in stock.", "error");
+            } else {
+                book.status = "Available";
+                historyLogs.push({
+                    id: book.id,
+                    name: book.name,
+                    author: book.author,
+                    student: "Library (Returned)",
+                    date: new Date().toLocaleString(),
+                    type: "Return"
+                });
+                renderTable();
+                showMessage(`Book returned successfully.`);
+                document.getElementById('returnBookId').value = "";
+            }
+        }
+
+        window.onload = () => {
+            renderTable();
+            showTab('inventory');
+        };
+    </script>
+</body>
+</html>
